@@ -36,21 +36,35 @@
 #endif
 #include <Context.h>
 #include <Lexer.h>
+#ifndef _WIN32
 #include <pwd.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/select.h>
 #include <sys/time.h>
+#endif
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <unicode.h>
-#include <unistd.h>
 #include <utf8.h>
 #include <util.h>
 
 #include <iostream>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <rpc.h>
+#include <string>
+#include <algorithm>
+#include <cctype>
+  #pragma comment(lib, "Rpcrt4.lib") // required for UuidCreate
+#else
+  #include <uuid/uuid.h>
+#endif
 
 #define STRING_UTIL_CONFIRM_YES "yes"
 #define STRING_UTIL_CONFIRM_YES_U "Yes"
@@ -145,15 +159,25 @@ void uuid_unparse_lower(uuid_t uu, char* out) {
 #endif
 
 const std::string uuid() {
-  uuid_t id;
-  uuid_generate(id);
-  char buffer[100]{};
-  uuid_unparse_lower(id, buffer);
-
-  // Bug found by Steven de Brouwer.
-  buffer[36] = '\0';
-
-  return std::string(buffer);
+  #ifdef _WIN32
+    UUID id;
+    if (UuidCreate(&id) != RPC_S_OK)
+      return {};
+    RPC_CSTR str = nullptr;
+    if (UuidToStringA(&id, &str) != RPC_S_OK || str == nullptr)
+      return {};
+    std::string result(reinterpret_cast<char*>(str));
+    RpcStringFreeA(&str);
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return result;
+  #else
+    uuid_t id;
+    uuid_generate(id);
+    char buffer[37];
+    uuid_unparse_lower(id, buffer);
+    return std::string(buffer);
+  #endif
 }
 #endif
 

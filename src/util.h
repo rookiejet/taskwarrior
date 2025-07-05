@@ -34,7 +34,9 @@
 
 #include <string>
 #include <vector>
-#if defined(FREEBSD) || defined(OPENBSD)
+#ifdef _WIN32
+// Windows uses RPC for UUID generation, handled in util.cpp
+#elif defined(FREEBSD) || defined(OPENBSD)
 #include <uuid.h>
 #else
 #include <uuid/uuid.h>
