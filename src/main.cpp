@@ -42,7 +42,9 @@ int main(int argc, const char** argv) {
 
   // Ignore SIGPIPE from writes to network sockets after the remote end has hung
   // up. Rust code expects this, and the Rust runtime ignores this signal at startup.
+#ifndef _WIN32
   signal(SIGPIPE, SIG_IGN);
+#endif
 
   Context globalContext;
   Context::setContext(&globalContext);
@@ -58,7 +60,9 @@ int main(int argc, const char** argv) {
   } else {
     try {
       status = Context::getContext().initialize(argc, argv);
-      if (status == 0) status = Context::getContext().run();
+      if (status == 0) {
+        status = Context::getContext().run();
+      }
     }
 
     catch (const std::string& error) {
