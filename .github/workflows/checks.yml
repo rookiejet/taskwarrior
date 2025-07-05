@@ -47,6 +47,44 @@ jobs:
           args: --all-features
           name: "Clippy Results"
 
+  clippy-windows:
+    runs-on: windows-latest
+    name: "Check & Clippy (Windows)"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: dtolnay/rust-toolchain@master
+        id: toolchain
+        with:
+          toolchain: "1.81.0" # MSRV
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - uses: actions-rs/cargo@v1.0.3
+        with:
+          command: check
+
+      - run: rustup component add clippy
+
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+          name: "Clippy Results (Windows)"
+
   fmt:
     runs-on: ubuntu-latest
     name: "Formatting"
