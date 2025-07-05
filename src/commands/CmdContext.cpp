@@ -184,7 +184,7 @@ void CmdContext::defineContext(const std::vector<std::string>& words, std::strin
     auto value = joinWords(words, 2);
 
     // Make sure nobody creates a context with name 'list', 'none' or 'show'
-    if (words[1] == "none" or words[1] == "list" or words[1] == "show") {
+    if (words[1] == "none" || words[1] == "list" || words[1] == "show") {
       throw format("The name '{1}' is reserved and not allowed to use as a context name.",
                    words[1]);
     }
@@ -242,7 +242,7 @@ void CmdContext::defineContext(const std::vector<std::string>& words, std::strin
         CmdConfig::unsetConfigVariable(name, false);
       }
 
-    if (!read_success and !write_success)
+    if (!read_success && !write_success)
       throw format("Context '{1}' not defined.", words[1]);
     else if (!read_success)
       out << format("Context '{1}' defined (write only).", words[1]);

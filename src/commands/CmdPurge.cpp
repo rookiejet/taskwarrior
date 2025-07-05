@@ -158,7 +158,7 @@ int CmdPurge::execute(std::string&) {
     Context::getContext().tdb2.purge(task);
   }
 
-  if (filtered.size() > 0 and !matched_deleted)
+  if (filtered.size() > 0 && !matched_deleted)
     Context::getContext().footnote(
         "No deleted tasks specified. Maybe you forgot to delete tasks first?");
 

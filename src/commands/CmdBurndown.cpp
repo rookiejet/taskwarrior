@@ -41,6 +41,11 @@
 #include <sstream>
 #include <unordered_map>
 
+// Undefine max macro if it exists to avoid conflicts with std::max
+#ifdef max
+#undef max
+#endif
+
 // Helper macro.
 #define LOC(y, x) (((y) * (_width + 1)) + (x))
 

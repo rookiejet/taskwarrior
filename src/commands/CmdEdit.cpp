@@ -37,7 +37,10 @@
 #include <Pig.h>
 #include <format.h>
 #include <shared.h>
-#include <unistd.h>
+#ifdef _WIN32
+#include <direct.h>
+#define chdir _chdir
+#endif
 #include <util.h>
 
 #include <algorithm>
