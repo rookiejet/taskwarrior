@@ -42,4 +42,11 @@ if (NOT MSVC)
   set (CMAKE_CXX_FLAGS "-Wall -Wextra -Wsign-compare -Wreturn-type ${CMAKE_CXX_FLAGS}")
 else()
   set (CMAKE_CXX_FLAGS "/W4 ${CMAKE_CXX_FLAGS}")
+
+  # Set iterator debug level for Windows debug builds
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-D_ITERATOR_DEBUG_LEVEL=2)
+  else()
+    add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
+  endif()
 endif()

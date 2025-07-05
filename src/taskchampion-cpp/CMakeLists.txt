@@ -55,13 +55,19 @@ if (ENABLE_TLS_NATIVE_ROOTS)
   set(TASKCHAMPION_FEATURES "tls-native-roots")
 endif (ENABLE_TLS_NATIVE_ROOTS)
 
+# Pass build type to Rust build process
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(ENV{CMAKE_BUILD_TYPE} "Debug")
+endif()
+
 # Import taskchampion-lib as a CMake library. This implements the Rust side of
 # the cxxbridge, and depends on the `taskchampion` crate.
 corrosion_import_crate(
   MANIFEST_PATH "${CMAKE_SOURCE_DIR}/Cargo.toml"
   LOCKED
   CRATES "taskchampion-lib"
-  FEATURES "${TASKCHAMPION_FEATURES}")
+  FEATURES "${TASKCHAMPION_FEATURES}"
+)
 
 # Set up `taskchampion-cpp`, the C++ side of the bridge.
 corrosion_add_cxxbridge(taskchampion-cpp
