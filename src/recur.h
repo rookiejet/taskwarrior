@@ -36,11 +36,19 @@
 #include <Duration.h>
 #include <Lexer.h>
 #include <format.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <pwd.h>
+#endif
 #include <sys/types.h>
 #include <time.h>
 #include <unicode.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 #include <util.h>
 
 #include <optional>

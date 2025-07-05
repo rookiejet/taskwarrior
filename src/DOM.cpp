@@ -235,7 +235,7 @@ bool getDOM(const std::string& name, const Task* task, Variant& value) {
 
   // If this can be ID/UUID reference (the name contains '.'),
   // lex it to figure out. Otherwise don't lex, as lexing can be slow.
-  if ((elements.size() > 1) and lexer.token(token, type)) {
+  if ((elements.size() > 1) && lexer.token(token, type)) {
     bool reloaded = false;
 
     if (type == Lexer::Type::uuid && token.length() == elements[0].length()) {

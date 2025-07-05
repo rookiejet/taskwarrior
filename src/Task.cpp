@@ -41,6 +41,9 @@
 
 #include <algorithm>
 #include <cfloat>
+#ifdef max
+#undef max
+#endif
 #ifdef PRODUCT_TASKWARRIOR
 #include <Context.h>
 #include <Pig.h>
@@ -1303,7 +1306,7 @@ std::vector<std::string> Task::getUDAOrphans() const {
   std::vector<std::string> orphans;
   for (auto& it : data)
     if (Context::getContext().columns.find(it.first) == Context::getContext().columns.end())
-      if (not(isAnnotationAttr(it.first) || isTagAttr(it.first) || isDepAttr(it.first)))
+      if (!(isAnnotationAttr(it.first) || isTagAttr(it.first) || isDepAttr(it.first)))
         orphans.push_back(it.first);
 
   return orphans;
@@ -1793,6 +1796,9 @@ float Task::urgency_c() const {
 
   if (is_blocking && Context::getContext().config.getBoolean("urgency.inherit")) {
     float prev = value;
+#ifdef max
+#undef max
+#endif
     value = std::max(value, urgency_inherit());
 
     // This is a hackish way of making sure parent tasks are sorted above
@@ -1824,6 +1830,9 @@ float Task::urgency_inherit() const {
   // It is called recursively for each dependency in the chain here.
   for (auto& task : getBlockedTasks()) {
     // Find highest urgency in all blocked tasks.
+#ifdef max
+#undef max
+#endif
     v = std::max(v, task.urgency());
   }
 #endif

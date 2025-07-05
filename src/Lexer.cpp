@@ -574,7 +574,7 @@ bool Lexer::isInteger(std::string& token, Lexer::Type& type) {
     while (unicodeLatinDigit(_text[marker])) utf8_next_char(_text, marker);
 
     // Leading zero is only allowed in the case of number 0
-    if (leading_zero and marker - _cursor > 1) return false;
+    if (leading_zero && marker - _cursor > 1) return false;
 
     token = _text.substr(_cursor, marker - _cursor);
     type = Lexer::Type::number;

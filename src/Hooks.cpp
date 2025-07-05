@@ -45,8 +45,10 @@
 #include <format.h>
 #include <shared.h>
 #include <sys/types.h>
-#include <sys/wait.h>
+#ifndef _WIN32
 #include <unistd.h>
+#include <sys/wait.h>
+#endif
 #include <util.h>
 
 #define STRING_HOOK_ERROR_OBJECT "Hook Error: JSON Object '{...}' expected from hook script: {1}"

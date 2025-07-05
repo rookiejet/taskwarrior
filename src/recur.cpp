@@ -27,23 +27,31 @@
 #include <cmake.h>
 // cmake.h include header must come first
 
+#include <algorithm>
 #include <Context.h>
 #include <Datetime.h>
 #include <Duration.h>
 #include <Lexer.h>
 #include <feedback.h>
 #include <format.h>
+#ifndef _WIN32
 #include <pwd.h>
+#include <unistd.h>
+#endif
 #include <recur.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unicode.h>
-#include <unistd.h>
 #include <util.h>
 
 #include <limits>
 #include <optional>
+
+// Undefine max macro if it exists to avoid conflicts with std::max
+#ifdef max
+#undef max
+#endif
 
 // Add a `time_t` delta to a Datetime, checking for and returning nullopt on integer overflow.
 std::optional<Datetime> checked_add_datetime(Datetime& base, time_t delta) {

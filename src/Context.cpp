@@ -42,9 +42,15 @@
 #include <shared.h>
 #include <stdlib.h>
 #include <taskchampion-cpp/lib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #include <algorithm>
+#include <limits>
+#ifdef max
+#undef max
+#endif
 #include <iomanip>
 #include <iostream>
 #include <regex>
@@ -54,7 +60,12 @@
 #include <commit.h>
 #endif
 
+#ifndef _WIN32
 #include <sys/ioctl.h>
+#else
+#include <windows.h>
+#include <io.h>
+#endif
 
 #ifdef SOLARIS
 #include <sys/termios.h>
@@ -450,7 +461,15 @@ Context::~Context() {
 int Context::initialize(int argc, const char** argv) {
   timer_total.start();
   int rc = 0;
-  home_dir = getenv("HOME");
+#ifndef _WIN32
+  home_dir = getenv("HOME") ? getenv("HOME") : "";
+#else
+  const char* home_env = getenv("HOME");
+  if (!home_env || !*home_env) {
+    home_env = getenv("USERPROFILE");
+  }
+  home_dir = home_env ? home_env : "";
+#endif
 
 #ifdef HAIKU
   // Haiku uses non-standard config file locations, and provides an API for them.
@@ -860,11 +879,20 @@ int Context::getWidth() {
 
   if (config.getBoolean("detection")) {
     if (terminal_width == 0 && terminal_height == 0) {
+#ifdef _WIN32
+      // Windows doesn't have TIOCGWINSZ, use GetConsoleScreenBufferInfo
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        terminal_height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+        terminal_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+      }
+#else
       unsigned short buff[4];
       if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &buff) != -1) {
         terminal_height = buff[0];
         terminal_width = buff[1];
       }
+#endif
     }
 
     width = terminal_width;
@@ -888,11 +916,20 @@ int Context::getHeight() {
 
   if (config.getBoolean("detection")) {
     if (terminal_width == 0 && terminal_height == 0) {
+#ifdef _WIN32
+      // Windows doesn't have TIOCGWINSZ, use GetConsoleScreenBufferInfo
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        terminal_height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+        terminal_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+      }
+#else
       unsigned short buff[4];
       if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &buff) != -1) {
         terminal_height = buff[0];
         terminal_width = buff[1];
       }
+#endif
     }
 
     height = terminal_height;
@@ -938,7 +975,11 @@ bool Context::color() {
     use_color = config.getBoolean("color");
 
     // Only tty's support color.
+#ifdef _WIN32
+    if (!_isatty(_fileno(stdout))) {
+#else
     if (!isatty(STDOUT_FILENO)) {
+#endif
       // No ioctl.
       config.set("detection", "off");
       config.set("color", "off");
@@ -1143,7 +1184,11 @@ void Context::createDefaultConfig() {
     // If stdout is not a file, we are probably executing in a completion context and should not
     // prompt (as the user won't see it) or modify the config (as completion functions are typically
     // read-only).
+#ifdef _WIN32
+    if (!_isatty(_fileno(stdout))) {
+#else
     if (!isatty(STDOUT_FILENO)) {
+#endif
       throw std::string("Cannot proceed without rc file.");
     }
 
@@ -1235,7 +1280,11 @@ CurrentTask Context::withCurrentTask(const Task* task) { return CurrentTask(*thi
 // This capability is to answer the question of 'what did I just do to generate
 // this output?'.
 void Context::updateXtermTitle() {
+#ifdef _WIN32
+  if (config.getBoolean("xterm.title") && _isatty(_fileno(stdout))) {
+#else
   if (config.getBoolean("xterm.title") && isatty(STDOUT_FILENO)) {
+#endif
     auto command = cli2.getCommand();
     std::string title;
 
