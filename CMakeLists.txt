@@ -65,11 +65,14 @@ SET (TASK_RCDIR "${TASK_DOCDIR}/rc" CACHE STRING "Installation directory for con
 SET (TASK_BINDIR  bin            CACHE STRING "Installation directory for the binary")
 
 # rust libs require these
-if (HAIKU)
+if (WIN32)
+  # Windows doesn't have dl or pthread libraries, but needs crypto libraries for Rust
+  set (TASK_LIBRARIES bcrypt crypt32 ncrypt secur32)
+elseif (HAIKU)
   set (TASK_LIBRARIES network be bsd gnu)
-else (HAIKU)
+else (WIN32)
   set (TASK_LIBRARIES dl pthread)
-endif (HAIKU)
+endif (WIN32)
 
 check_function_exists (get_current_dir_name HAVE_GET_CURRENT_DIR_NAME)
 check_function_exists (wordexp HAVE_WORDEXP)
@@ -78,10 +81,15 @@ check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("struct stat" st_birthtime "sys/types.h;sys/stat.h" HAVE_ST_BIRTHTIME)
 
 message ("-- Looking for libuuid")
-if (DARWIN OR FREEBSD OR OPENBSD)
+if (WIN32)
+  # Windows uses the native RPC UUID API rather than libuuid
+  set (HAVE_UUID_UNPARSE_LOWER TRUE)
+  list (APPEND TASK_LIBRARIES Rpcrt4)
+  message ("-- Skipping libuuid, using Windows RPC (Rpcrt4)")
+elseif (DARWIN OR FREEBSD OR OPENBSD)
   # Apple and FreeBSD include the uuid functions in their libc, rather than libuuid
   check_function_exists (uuid_unparse_lower HAVE_UUID_UNPARSE_LOWER)
-else (DARWIN OR FREEBSD OR OPENBSD)
+else (WIN32)
   find_path    (UUID_INCLUDE_DIR   uuid/uuid.h)
   find_library (UUID_LIBRARY NAMES uuid)
   if (UUID_INCLUDE_DIR AND UUID_LIBRARY)
@@ -94,7 +102,7 @@ else (DARWIN OR FREEBSD OR OPENBSD)
   else (UUID_INCLUDE_DIR AND UUID_LIBRARY)
     message (FATAL_ERROR "-- libuuid not found.")
   endif (UUID_INCLUDE_DIR AND UUID_LIBRARY)
-endif (DARWIN OR FREEBSD OR OPENBSD)
+endif (WIN32)
 
 if (HAVE_UUID_UNPARSE_LOWER)
   message ("-- Found libuuid")
@@ -135,7 +143,11 @@ endif (SOLARIS)
 
 # Disable the Clang return-type-c-linkage warning globally. See #3225.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-type-c-linkage")
+  if (MSVC)
+    set (CMAKE_CXX_FLAGS "/W4 ${CMAKE_CXX_FLAGS}")
+  else()
+    set (CMAKE_CXX_FLAGS "-Wall -Wextra -Wsign-compare -Wreturn-type ${CMAKE_CXX_FLAGS}")
+  endif()
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 message ("-- Configuring cmake.h")
