@@ -43,6 +43,9 @@ if (NOT MSVC)
 else()
   set (CMAKE_CXX_FLAGS "/W4 ${CMAKE_CXX_FLAGS}")
 
+  # Keep <windows.h> from defining min/max macros that break std::min/std::max
+  add_definitions(-DNOMINMAX)
+
   # Set iterator debug level for Windows debug builds
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-D_ITERATOR_DEBUG_LEVEL=2)
