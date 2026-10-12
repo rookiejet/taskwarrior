@@ -45,6 +45,12 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -458,6 +464,51 @@ Context::~Context() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Return the directory containing the running task executable, or an empty
+// string when it cannot be determined.
+static std::string executableDirectory() {
+#ifdef _WIN32
+  char buffer[MAX_PATH];
+  DWORD length = GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+  if (length == 0 || length >= MAX_PATH) return "";
+  std::string path(buffer, length);
+#elif defined(__APPLE__)
+  char buffer[4096];
+  uint32_t size = sizeof(buffer);
+  if (_NSGetExecutablePath(buffer, &size) != 0) return "";
+  std::string path(buffer);
+#else
+  char buffer[4096];
+  ssize_t length = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+  if (length <= 0) return "";
+  buffer[length] = '\0';
+  std::string path(buffer);
+#endif
+
+  auto slash = path.find_last_of("/\\");
+  return (slash == std::string::npos) ? "" : path.substr(0, slash);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Directories searched for the bundled rc files (themes, holidays, ...) that
+// are referenced via "include" from the configuration.  The directory of the
+// running executable is searched first, so that an installation tree can be
+// relocated; the compile-time TASK_RCDIR is kept as a fallback.
+std::vector<std::string> Context::rcSearchPaths() {
+  std::vector<std::string> searchPaths;
+
+  std::string exe_dir = executableDirectory();
+  if (!exe_dir.empty()) {
+    searchPaths.push_back(exe_dir + "/rc");                  // beside the executable
+    searchPaths.push_back(exe_dir);                          // directly beside the executable
+    searchPaths.push_back(exe_dir + "/../share/doc/task/rc");  // conventional install layout
+  }
+
+  searchPaths.push_back(TASK_RCDIR);
+  return searchPaths;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 int Context::initialize(int argc, const char** argv) {
   timer_total.start();
   int rc = 0;
@@ -484,7 +535,7 @@ int Context::initialize(int argc, const char** argv) {
   }
 #endif
 
-  std::vector<std::string> searchPaths{TASK_RCDIR};
+  std::vector<std::string> searchPaths = rcSearchPaths();
 
   try {
     ////////////////////////////////////////////////////////////////////////////
@@ -1237,7 +1288,7 @@ void Context::createDefaultConfig() {
       throw format("Could not write to '{1}'.", rc_file._data);
 
     // Load it so that it takes effect for this run.
-    config.load(rc_file._data, 1, {TASK_RCDIR});
+    config.load(rc_file._data, 1, rcSearchPaths());
   }
 }
 

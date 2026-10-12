@@ -272,7 +272,7 @@ int CmdShow::execute(std::string& output) {
   // Find all the values that match the defaults, for highlighting.
   std::vector<std::string> default_values;
   Configuration default_config;
-  default_config.parse(configurationDefaults, 0, {TASK_RCDIR});
+  default_config.parse(configurationDefaults, 0, Context::rcSearchPaths());
 
   for (auto& i : Context::getContext().config)
     if (i.second != default_config.get(i.first)) default_values.push_back(i.first);

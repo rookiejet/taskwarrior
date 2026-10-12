@@ -51,6 +51,7 @@ class Context {
 
   static Context& getContext();
   static void setContext(Context*);
+  static std::vector<std::string> rcSearchPaths();  // locate bundled rc/theme files
 
   int initialize(int, const char**);  // all startup
   int run();
