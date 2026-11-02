@@ -156,6 +156,7 @@ set (pythonTests
   operators.test.py
   overdue.test.py
   partial.test.py
+  powershell_completion.test.py
   prepend.test.py
   pri_sort.test.py
   project.test.py

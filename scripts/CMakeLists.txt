@@ -14,7 +14,7 @@ if(NOT BASH_COMPLETIONSDIR)
 	message(STATUS "bash-completion pkgconfig module missing, assumed completions in ${BASH_COMPLETIONSDIR}")
 endif()
 
-install (DIRECTORY vim hooks
+install (DIRECTORY vim hooks powershell
          DESTINATION ${TASK_DOCDIR}/scripts)
 install (FILES fish/task.fish
          DESTINATION ${FISH_COMPLETIONSDIR})
