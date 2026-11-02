@@ -93,18 +93,47 @@ def wait_condition(cond, timeout=10, sleeptime=0.01):
     return val
 
 
+def _is_process_alive(pid):
+    """Check if a process is still running without signaling it"""
+
+    if os.name == "nt":
+        # NOTE: On Windows os.kill(pid, 0) terminates the process instead of
+        # probing it, so ask the OS for the process exit code instead.
+        import ctypes
+
+        STILL_ACTIVE = 259
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            # Process does not exist anymore
+            return False
+        try:
+            code = ctypes.c_ulong()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return False
+            return code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
 def wait_process(pid, timeout=None):
     """Wait for process to finish"""
 
     def process():
-        try:
-            os.kill(pid, 0)
-        except OSError:
-            # Process is dead
-            return True
-        else:
+        if _is_process_alive(pid):
             # Process is still ticking
             return None
+        else:
+            # Process is dead
+            return True
 
     return wait_condition(process, timeout)
 
@@ -202,10 +231,17 @@ def _get_output(arguments, timeout=None):
         )
 
     # If we reach this point we assume the process got stuck or timed out
-    for sig in (signal.SIGABRT, signal.SIGTERM, signal.SIGKILL):
+    # NOTE: Windows has no SIGKILL/SIGTERM; os.kill terminates the process
+    # there for any signal other than the console control events.
+    kill_signals = [
+        getattr(signal, name)
+        for name in ("SIGABRT", "SIGTERM", "SIGKILL")
+        if hasattr(signal, name)
+    ]
+    for sig in kill_signals:
         # Start with lower signals and escalate if process ignores them
         try:
-            os.kill(pid, signal.SIGABRT)
+            os.kill(pid, sig)
         except OSError as e:
             # ESRCH means the process finished/died between last check and now
             if e.errno != errno.ESRCH:
